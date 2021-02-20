@@ -1,8 +1,14 @@
+//
+// Copyright (c) 2021 Fw-Box (https://fw-box.com)
+// Author: Hartman Hsieh
+//
+// Description :
+//   None
+//
 
 #ifndef __FWBOX__
 #define __FWBOX__
 
-//#include <LittleFS.h>
 #include "BuildSettings.h"
 #if defined(ESP32)
   //#include <Preferences.h>
@@ -15,6 +21,7 @@ using namespace FwBox;
 
 FwBoxCore FwBoxIns; // FwBoxCore instance
 
+bool FlagFbEarlyBegin = false;
 bool FlagCfgServerBegin = false;
 
 #if ENABLE_MQTT == 1
@@ -68,6 +75,8 @@ void mqttSubCallback(char* topic, byte* payload, unsigned int length) {
 
 void fbEarlyBegin(int devType, const char* fwVersion)
 {
+  FlagFbEarlyBegin = true;
+
   WiFi.mode(WIFI_STA);
 
 #if defined(ESP8266)
@@ -111,6 +120,13 @@ void fbEarlyBegin(int devType, const char* fwVersion)
 //
 void fbBegin(int devType, const char* fwVersion)
 {
+  //
+  // If 'fbEarlyBegin' didn't run yet, run it.
+  //
+  if (FlagFbEarlyBegin == false) {
+  	fbEarlyBegin(devType, fwVersion);
+  }
+
 #if ENABLE_MQTT == 1
   //
   // Set the MQTT callback, it must be called before "FwBoxIns.begin".

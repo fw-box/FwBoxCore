@@ -1,3 +1,10 @@
+//
+// Copyright (c) 2021 Fw-Box (https://fw-box.com)
+// Author: Hartman Hsieh
+//
+// Description :
+//   None
+//
 
 #ifndef __BUILDSETTINGS__
 #define __BUILDSETTINGS__

@@ -1,3 +1,10 @@
+//
+// Copyright (c) 2021 Fw-Box (https://fw-box.com)
+// Author: Hartman Hsieh
+//
+// Description :
+//   None
+//
 
 #ifndef __FWBOXCORE__
 #define __FWBOXCORE__
@@ -85,15 +92,7 @@ namespace FwBox {
   //
   // Server address
   //
-  // "192.168.43.17"; // Office
-  // "10.0.0.4"; // Synology
-  // "10.0.0.2"; // Home
-  // "fw-box.com"; // fw-box.com
-  //
   const int SERVER_LIST_COUNT = 2;
-  //const String SERVER_LIST[SERVER_LIST_COUNT] = {"192.168.43.18", "fw-box.com"};
-  //const String SERVER_LIST[SERVER_LIST_COUNT] = {"10.0.0.4", "fw-box.com"};
-  //const String SERVER_LIST[SERVER_LIST_COUNT] = {"10.0.0.2", "fw-box.com"};
   const String SERVER_LIST[SERVER_LIST_COUNT] = {"fw-box.com", "fw-box.com"};
 
   class FwBoxCore : public FwBoxBasic, public FwBoxUtil, public FwBoxSync {
