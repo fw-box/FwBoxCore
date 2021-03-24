@@ -1138,11 +1138,12 @@ void FwBoxCore::handleCallAUrl()
       str_url.replace(key_val, String(FwBoxCore::ValueArray[vi]));
     }
     
-    DBGMSGLN(str_url);
-    String respond = "";
-    FwBoxSync::sendHttpGet(str_url.c_str(), &respond);
-    //DBGMSGLN(respond);
-    
+    if (str_url.length() > 0) {
+      DBGMSGLN(str_url);
+      String respond = "";
+      FwBoxSync::sendHttpGet(str_url.c_str(), &respond);
+    }
+
     previous_call_a_url_time = millis();
 
   }

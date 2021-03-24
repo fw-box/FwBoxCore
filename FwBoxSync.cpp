@@ -28,6 +28,11 @@ FwBoxSync::~FwBoxSync()
 {
 }
 
+int FwBoxSync::connectFb(int deviceType, String* deviceUuid, const char* fwVersion, const char* fwSize, const char* email, String* responseData)
+{
+  return 0; // Success
+}
+
 void FwBoxSync::setServerAddress(const String* serverAddress)
 {
   FwBoxSync::ServerAddress = (*serverAddress);
@@ -123,8 +128,9 @@ int FwBoxSync::connect(int deviceType, String* deviceUuid, const char* fwVersion
     strcat(FwBoxSync::url, "&email=");
     strcat(FwBoxSync::url, email);
   }
-  //DBGMSGLN(FwBoxSync::url);
 
+  
+  //DBGMSGLN("FwBoxSync::connect");
   return FwBoxSync::sendHttpGet(FwBoxSync::url, responseData);
 }
 
@@ -406,8 +412,9 @@ int FwBoxSync::sendHttpGet(const char* strUrl, String* payload) {
     DBGMSGLN(strUrl);
 
     //DBGMSG("[HTTP] begin...\n");
+    int rt_begin = http.begin(client, strUrl);
 
-    if (http.begin(client, strUrl)) {  // HTTP
+    if (rt_begin) {  // HTTP
       //DBGMSG("[HTTP] GET...\n");
       
       http.setTimeout(6 * 1000);
@@ -440,8 +447,11 @@ int FwBoxSync::sendHttpGet(const char* strUrl, String* payload) {
 
     }
     else {
-      DBGMSGLN("[HTTP} Unable to connect");
+      //DBGMSGF("strUrl length = %d\n", strlen(strUrl));
+      //DBGMSGLN(strUrl);
+      DBGMSGF("[HTTP} Unable to connect, rt_begin = %d\n", rt_begin);
     }
+    //DBGMSGF("rt_begin = %d\n", rt_begin);
 #else
     //
     // For ESP32

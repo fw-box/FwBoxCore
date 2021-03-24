@@ -31,6 +31,9 @@
   #include <HTTPUpdate.h>
 #endif
 
+#include <PubSubClient.h>
+typedef void (*FbMqttCallback)(char* topic, byte* payload, unsigned int length);
+
 //#include <WiFiClientSecureBearSSL.h> // HTTPS
 
 
@@ -46,9 +49,16 @@ namespace FwBox {
 
         String encodeHash(const char* str);
 
+        WiFiClient FbWiFiClient;
+        PubSubClient* FbClient = 0;
+        FbMqttCallback FbCallback = 0;
+
       public:
         FwBoxSync();
         ~FwBoxSync();
+        
+        int connectFb(int deviceType, String* deviceUuid, const char* fwVersion, const char* fwSize, const char* email, String* responseData);
+		void setFbCallback();
 
         int sendHttpGet(const char* strUrl, String* payload);
         int sendHttpsGet(const char* strUrl, String* payload);
