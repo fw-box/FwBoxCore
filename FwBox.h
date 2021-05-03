@@ -38,10 +38,15 @@ void setRcvValueCallback(ReceiveValueCallback rcvValueCallback)
 void mqttSubCallback(char* topic, byte* payload, unsigned int length) {
   payload[length] = '\0';
   String str_callback_topic = String((char*)topic);
+  String Component;
   //uint8_t val_out_in = FwBoxIns.getValOutIn();
-  String str_topic_head = "fw_box/" + FwBoxIns.getSimpleChipId();
-  str_topic_head += "/";
+  //String str_topic_head = "fw_box/" + FwBoxIns.getSimpleChipId();
 
+  //homeassistant/cdee/name/set
+
+ //String str_topic_head = "homeassisatant/" + FwBoxIns.getSimpleChipId()
+ // str_topic_head += "/";
+  String str_topic_head = "homeassistant/";
   DBGMSGLN(str_callback_topic);
 
   for(int vi = 0; vi < FwBoxIns.getValCount(); vi++) {
@@ -51,12 +56,22 @@ void mqttSubCallback(char* topic, byte* payload, unsigned int length) {
     if(FwBoxIns.getValOutIn(vi) == 0) { // 0 is OUT, 1 is IN
       continue;
     }
-    
+  
+    if(FwBoxIns.getValType(vi) == VALUE_TYPE_OUT_SWITCH ) {
+        Component = "switch";
+        DBGMSGLN("accept switch");
+    }
     //
     // Consist the topic string.
     //
-    String str_topic = str_topic_head + FwBoxIns.getValName(vi) + "/set";
-
+    DBGMSGLN("?????");
+    DBGMSGLN(Component);
+    DBGMSGLN(FwBoxIns.getValType(vi));
+    DBGMSGLN("?????");
+    //String str_topic = str_topic_head + FwBoxIns.getValName(vi) + "/set";
+    String str_topic = str_topic_head + Component + "/" + FwBoxIns.getSimpleChipId() + "/" + FwBoxIns.getValName(vi) + "/set";
+    DBGMSGLN("accept switch@22222");
+    DBGMSGLN( str_topic);
     //
     // MQTT server send a topic to modify GPIO value.
     //
@@ -64,7 +79,7 @@ void mqttSubCallback(char* topic, byte* payload, unsigned int length) {
     {
       String str_payload = String((char*)payload);
       //str_payload.toUpperCase();
-
+         DBGMSGLN("5151515151");
       if(RcvValueCallback != 0)
         RcvValueCallback(vi, &str_payload);
     }
@@ -78,6 +93,7 @@ void fbEarlyBegin(int devType, const char* fwVersion)
   FlagFbEarlyBegin = true;
 
   WiFi.mode(WIFI_STA);
+  WiFi.setAutoReconnect(true);
 
 #if defined(ESP8266)
   WiFi.begin();

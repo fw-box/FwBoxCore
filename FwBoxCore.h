@@ -59,6 +59,7 @@
 #define VALUE_TYPE_OUT_BUTTON 0x006
 #define VALUE_TYPE_OUT_STRING 0x007
 
+#define VALUE_TYPE_OUT_SWITCH 0x106
 
 namespace FwBox {
   
@@ -107,7 +108,7 @@ namespace FwBox {
       String ValDesc[MAX_VALUE_COUNT];
       String ValUnit[MAX_VALUE_COUNT];
       String ValName[MAX_VALUE_COUNT];
-      //uint8_t ValOutIn = 0;
+      bool FirstTimeHomeAssistantPublish = true;
 
       //
       // define('VALUE_TYPE', array(
@@ -196,9 +197,11 @@ namespace FwBox {
       
       void setValDesc(int valIndex, const char* desc);
       void setValUnit(int valIndex, const char* unit);
+      void setValUnit(int valIndex, String unit);
       String getValDesc(int index);
       String getValUnit(int index);
       String getValName(int index);
+      uint16_t getValType(int index);
       uint8_t getValCount();
       uint8_t getValOutIn(int index);
       int getParameterArray(String* out, int length);
@@ -218,3 +221,4 @@ namespace FwBox {
 using namespace FwBox;
 
 #endif // __FWBOXCORE__
+
