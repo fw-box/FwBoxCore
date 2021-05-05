@@ -84,7 +84,7 @@
 #endif // #if ENABLE_MQTT == 1
 
 
-#define DEBUG 0
+#define DEBUG 1
 
 
 #define URL_PATH_CONN "/conn.php"
