@@ -15,6 +15,7 @@
 
 using namespace FwBox;
 
+bool FirstTime = true ; //Fisrt time to publish payload
 
 FwBoxCore::FwBoxCore()
 {
@@ -124,7 +125,6 @@ void FwBoxCore::begin(int devType, const char* fwVersion)
 
   DBGMSG("FwBoxCore::SysCfg.FwSize=");
   DBGMSGLN(FwBoxCore::SysCfg.FwSize);
-
   if(FwBoxCore::GpioStatusLed >= 0)
     pinMode(FwBoxCore::GpioStatusLed, OUTPUT);
 
@@ -410,7 +410,7 @@ int FwBoxCore::scanServer()
     DBGMSG("Connecting to server - ");
     DBGMSG(SERVER_LIST[i]);
     DBGMSGLN("...");
-
+    FwBoxCore::printSystemConfig();
     //
     // Send request to server.
     //
@@ -521,7 +521,6 @@ int FwBoxCore::updateToServer(String* response, int extCmd)
 int FwBoxCore::parseServerResponse(String* response)
 {
   response->trim();
-  //DBGMSGLN(*response);
   if (response->length() > 0) {
     int from_0 = 0;
     int to_0 = response->indexOf(">>>@", from_0);
@@ -538,7 +537,6 @@ int FwBoxCore::parseServerResponse(String* response)
         //DBGMSGLN(str_config);
         //DBGMSGLN(str_sen_data);
         //DBGMSGLN(str_script);
-
         if (str_config.length() > 0) {
           FwBoxCore::parseJson(&str_config);
         } // END OF "if(str_config.length() > 0)"
@@ -555,7 +553,6 @@ int FwBoxCore::parseJson(String* jsonData)
   String temp = "";
   int temp_i = 0xfe;
   String temp_arr[MAX_VALUE_COUNT];
-
   if (lj.getString(jsonData, "DN", &temp) == 0) { // success
     FwBoxCore::SysCfg.DevName = temp;
     DBGMSG("[DN]FwBoxCore::SysCfg.DevName=");
@@ -596,8 +593,6 @@ int FwBoxCore::parseJson(String* jsonData)
     // Clear the char - "
     //
     temp.replace("\"", "");
-    //DBGMSG("[VT]ValType=");
-    //DBGMSGLN(temp);
     FwBoxUtil util;
     const char* tp = temp.c_str();
     int pos = 0;
@@ -647,9 +642,6 @@ int FwBoxCore::parseJson(String* jsonData)
       FwBoxCore::ValName[ii] = temp_arr[ii];
       DBGMSGLN(FwBoxCore::ValName[ii]);
     }
-
-    DBGMSG("ValCount=");
-    DBGMSGLN(temp_i);
   }
 
   temp_i = MAX_VALUE_COUNT;
@@ -659,12 +651,12 @@ int FwBoxCore::parseJson(String* jsonData)
       FwBoxCore::ValDesc[ii] = temp_arr[ii];
       DBGMSGLN(FwBoxCore::ValDesc[ii]);
     }
-
+/*
     if(temp_i > FwBoxCore::ValCount)
       FwBoxCore::ValCount = temp_i;
 
     DBGMSG("ValCount=");
-    DBGMSGLN(temp_i);
+    DBGMSGLN(temp_i);*/
   }
 
   temp_i = MAX_VALUE_COUNT;
@@ -673,9 +665,7 @@ int FwBoxCore::parseJson(String* jsonData)
     for(int ii = 0; ii < temp_i; ii++) {
       FwBoxCore::ValUnit[ii] = temp_arr[ii];
       DBGMSGLN(FwBoxCore::ValUnit[ii]);
-    //  Serial.println(FwBoxCore::ValUnit[ii]);
       FwBoxCore::setValUnit( ii , temp_arr[ii]);
-    //  DBGMSGLN(FwBoxCore::ValUnit[ii]);
     }
   }
 
@@ -897,88 +887,92 @@ void FwBoxCore::handleMqtt()
 void FwBoxCore::mqttPublish()
 {
   String simple_chip_id = FwBoxCore::getSimpleChipId();
-  String Component ;
-  //homeassistant/sensor/cdee/pm10_0/config
-
-  //{
-  // "name": "cdee test  pm10_0",
-  // "state_topic":"homeassistant/switch/cdee/pm10/state",
-  // "unit_of_measurement": "μg/m³",
-  // "value_template": "{{ value_json.pm10_0}}",
-  //  "unique_id" : "1010"
-  //}
-
+  String component ; ///Home assistant component
+  
   if (FwBoxCore::SysCfg.MqttTopicType == MQTT_TOPIC_TYPE_HOME_ASSISTANT) {
-    if(FwBoxCore::FirstTimeHomeAssistantPublish){
+    if(FirstTime){
       for (int vi = 0; vi < FwBoxCore::ValCount; vi++) {
-        DBGMSGLN(vi);
-        DBGMSGLN(FwBoxCore::ValType[vi]);
+        
+        ///
+        /// Home assistant component topic format
+        ///
         if (FwBoxCore::ValType[vi] == VALUE_TYPE_OUT_SENSOR ) {
-          Component = "sensor";
+          component = "sensor";
         }
         else if(FwBoxCore::ValType[vi] == VALUE_TYPE_OUT_BUTTON) {
-          Component = "binary_sensor";
+          component = "binary_sensor";
         }
         else if(FwBoxCore::ValType[vi] == VALUE_TYPE_OUT_STRING ) {
-          Component = "string";
+          component = "string";
+        }
+        else if(FwBoxCore::ValType[vi] == VALUE_TYPE_OUT_Brightness ) {
+          component = "light";
         }
         else if(FwBoxCore::ValType[vi] == VALUE_TYPE_OUT_SWITCH ) {
-          Component = "switch";
-          DBGMSGLN("got switch");
+          component = "switch";
         }
-        // DBGMSGLN(FwBoxCore::ValType[vi]);
-        // DBGMSGLN(Component);
-        String str_topic = "homeassistant/" + Component + "/" + simple_chip_id + "/" + FwBoxCore::ValName[vi] + "/config";
-        String str_payload = "{\n \"name\" : \"" + simple_chip_id + " " + FwBoxCore::ValName[vi] + "\"";
-        // str_payload +=  ",\n \"state_topic\" : \"homeassistant/" + Component + "/" + simple_chip_id + FwBoxCore::ValName[vi] + "/state\"";
+        
+        ///
+        /// Home assistant topic and payload JSON (basic)
+        ///
+        String str_topic = "homeassistant/" + component + "/" + simple_chip_id + "/" + FwBoxCore::ValName[vi] + "/config";
+        String str_payload = "{\n \"name\" : \"" + FwBoxCore::SysCfg.DevName + " " + FwBoxCore::ValName[vi] + "\"";
+        ///
+        /// Home assistant payload of output
+        ///
         if(FwBoxCore::ValType[vi] == VALUE_TYPE_OUT_SENSOR){
-          str_payload +=  ",\n \"state_topic\" : \"homeassistant/" + Component + "/" + simple_chip_id + "/state\"";
+          str_payload +=  ",\n \"state_topic\" : \"homeassistant/" + component + "/" + simple_chip_id + "/state\"";
           str_payload +=  ",\n \"unit_of_measurement\" : \"" + FwBoxCore::ValUnit[vi] + "\"";
           str_payload +=  ",\n \"value_template\" : \"{{ value_json." + FwBoxCore::ValName[vi] + "}}\"";
         }
-        else if(FwBoxCore::ValType[vi] == VALUE_TYPE_OUT_SWITCH){
-          str_payload +=  ",\n \"state_topic\" : \"homeassistant/" + Component + "/" + simple_chip_id + "/" + FwBoxCore::ValName[vi] + "/state\"";
-          // str_payload +=  ",\n \"command_topic\" : \"homeassistant/switch/" + simple_chip_id + "/set\"";
-          str_payload +=  ",\n \"command_topic\" : \"homeassistant/" + Component + "/" + simple_chip_id + "/" + FwBoxCore::ValName[vi] +"/set\"";
+        ///
+        /// Home assistant payload of input
+        ///
+        else if((FwBoxCore::ValType[vi] == VALUE_TYPE_OUT_SWITCH) || (FwBoxCore::ValType[vi] == VALUE_TYPE_OUT_Brightness)){
+          str_payload +=  ",\n \"state_topic\" : \"homeassistant/" + component + "/" + simple_chip_id + "/" + FwBoxCore::ValName[vi] + "/state\"";
+          str_payload +=  ",\n \"command_topic\" : \"homeassistant/" + component + "/" + simple_chip_id + "/" + FwBoxCore::ValName[vi] +"/set\"";
+          
+          ///
+          /// Home assistant light 
+          ///
+          if((FwBoxCore::ValType[vi] == VALUE_TYPE_OUT_Brightness)){
+            str_payload +=  ",\n \"schema\" :  \"json\"";
+            str_payload +=  ",\n \"brightness\" :  true";
+          }
         }
         str_payload +=  "\n}";
-        
+        //
+        // Only publish the output values.
+        //
         FwBoxCore::MqttClient->publish(str_topic.c_str(), str_payload.c_str(), true);
-        FwBoxCore::FirstTimeHomeAssistantPublish = false ;
         DBGMSGLN(str_topic);
         DBGMSGLN(str_payload);
+        FirstTime = false ; // Fisrt time publish payload is over;
       }
     }
 
     String str_payload = "{";
 
     for (int vi = 0; vi < FwBoxCore::ValCount; vi++) {
-      //  cout<<"\n"<<FwBoxCore::ValType[vi];//<<"  Unit : "<<FwBoxCore::getValUnit(vi)<<"\n";
-      //  Serial.println(FwBoxCore::ValUnit[vi]);
       //
       // Skip if this is an input value.
       //
-      if (FwBoxCore::ValType[vi] == VALUE_TYPE_OUT_SENSOR ) {
-        Component = "sensor";
+     
+      if (getOutIn(FwBoxCore::ValType[vi]) == 1)// 0 is OUT, 1 is IN
+        continue;
+      
+      //
+      // Homeassistant static_topic format (output)
+      //
+      else if (FwBoxCore::ValType[vi] == VALUE_TYPE_OUT_SENSOR ) {
+        component = "sensor";
       }
       else if(FwBoxCore::ValType[vi] == VALUE_TYPE_OUT_BUTTON) {
-        Component = "binary_sensor";
+        component = "binary_sensor";
       }
       else if(FwBoxCore::ValType[vi] == VALUE_TYPE_OUT_STRING ) {
-        Component = "string";
+        component = "string";
       }
-      
-      if (getOutIn(FwBoxCore::ValType[vi]) == 1)
-        continue;
-
-      DBGMSGLN(FwBoxCore::ValType[vi]);
-      
-      //
-      // Skip if this is a button
-      //
-      //if (FwBoxCore::ValName[vi].equals("button") == true)
-      if (FwBoxCore::ValType[vi] == VALUE_TYPE_OUT_BUTTON)
-        continue;
 
       if(str_payload.length() > 1) // This is not the first value
         str_payload += ",";
@@ -988,31 +982,54 @@ void FwBoxCore::mqttPublish()
       str_payload += "\":";
       str_payload += FwBoxCore::ValueArray[vi];
     }
-    //{\"pm1_0\":4.00,\"pm2_5\":5.00,\"pm10\":7.00}
     if(str_payload.length() == 1) // no data
       return;
 
     str_payload += "}";
-    
     //
     // Produce the topic string
     //
-    
-    //String str_topic = "fw_box/" + simple_chip_id + "/data";
-    String str_topic = "homeassistant/" + Component + "/" + simple_chip_id + "/state";
+
+    String str_topic = "homeassistant/" + component + "/" + simple_chip_id + "/state";
+    //
+    // Only publish the output values.
+    //
+
+    FwBoxCore::MqttClient->publish(str_topic.c_str(), str_payload.c_str(), true);
+    DBGMSGLN(str_topic);
+    DBGMSGLN(str_payload);
+  }
+  /*else if(FwBoxCore::SysCfg.MqttTopicType == MQTT_TOPIC_TYPE_THING_SPEAK) {
+    String str_payload = FwBoxCore::SysCfg.MqttPayload;
+    for(int vi = 0; vi < FwBoxCore::ValCount; vi++) {
+      //
+      // Skip if this is an input value.
+      //
+      if (getOutIn(FwBoxCore::ValType[vni]) == 1) // 0 is OUT, 1 is IN
+        continue;
+
+      String key_val = "{val";
+      key_val += vi;
+      key_val += "}";
+      str_payload.replace(key_val, String(FwBoxCore::ValueArray[vi]));
+    }
 
     //
     // Only publish the output values.
     //
-    FwBoxCore::MqttClient->publish(str_topic.c_str(), str_payload.c_str(), true);
-    DBGMSGLN(str_topic);
+    FwBoxCore::MqttClient->publish(FwBoxCore::SysCfg.MqttTopic.c_str(), str_payload.c_str(), true);
+    DBGMSGLN(FwBoxCore::SysCfg.MqttTopic);
     DBGMSGLN(str_payload);
-    //fw_box/cdee/data
-    //{"pm1_0":4.00,"pm2_5":5.00,"pm10":7.00}
-  }
+  }*/
   else if (FwBoxCore::SysCfg.MqttTopicType == MQTT_TOPIC_TYPE_CUSTOM) {
     String str_payload = FwBoxCore::SysCfg.MqttPayload;
     for (int vi = 0; vi < FwBoxCore::ValCount; vi++) {
+      //
+      // Skip if this is an input value.
+      //
+      if (getOutIn(FwBoxCore::ValType[vi]) == 1) // 0 is OUT, 1 is IN
+        continue;
+
       String key_val = "{val";
       key_val += vi;
       key_val += "}";
@@ -1033,7 +1050,40 @@ void FwBoxCore::mqttPublish()
     }
   }
   else {
-
+/*
+    boolean all_is_zero = true;
+    for (int vni = 0; vni < FwBoxCore::ValCount; vni++) {
+      if(FwBoxCore::ValueArray[vni] > 0) {
+        all_is_zero = false;
+        break;
+      }
+    }
+    if(all_is_zero == false) {
+      char subscribe_topic[] = "v1/devices/me/attributes"; // Fixed topic. ***DO NOT MODIFY***
+      char publish_topic[]   = "v1/devices/me/telemetry";  // Fixed topic. ***DO NOT MODIFY***
+      String str_json = "{";
+      for (int vni = 0; vni < FwBoxCore::ValCount; vni++) {
+        if(vni == 0) {
+          str_json += "\"";
+          str_json += FwBoxCore::ValName[vni];
+          str_json += "\":\"";
+          str_json += FwBoxCore::ValueArray[vni];
+          str_json += "\"";
+        }
+        else {
+          str_json += ",\"";
+          str_json += FwBoxCore::ValName[vni];
+          str_json += "\":\"";
+          str_json += FwBoxCore::ValueArray[vni];
+          str_json += "\"";
+        }
+      }
+      str_json += "}";
+      FwBoxCore::MqttClient->publish(publish_topic, str_json.c_str(), true);
+      DBGMSGLN(publish_topic);
+      DBGMSGLN(str_json);
+    }
+*/
   }
 }
 
@@ -1044,7 +1094,15 @@ void FwBoxCore::mqttSubscribe()
   DBGMSGLN(FwBoxCore::SysCfg.MqttTopicType);
 
   String simple_chip_id = FwBoxCore::getSimpleChipId();
-  String Component = "";
+  String component ; ///Home assistant component
+
+  /*DBGMSGLN("=== SHOW VAL OUT IN ===");
+  for (int vni = 0; vni < FwBoxCore::ValCount; vni++) {
+    DBGMSG("VAL");
+    DBGMSG(vni);
+    DBGMSG("=");
+    DBGMSGLN(getOutIn(FwBoxCore::ValType[vni]));
+  }*/
 
   if(FwBoxCore::SysCfg.MqttTopicType == MQTT_TOPIC_TYPE_HOME_ASSISTANT) {
     for (int vni = 0; vni < FwBoxCore::ValCount; vni++) {
@@ -1055,21 +1113,24 @@ void FwBoxCore::mqttSubscribe()
       if (getOutIn(FwBoxCore::ValType[vni]) == 0) { // 0 is OUT, 1 is IN
           continue; // It's an output value, skip it.
       }
+      
+      ///
+      /// get what component it is  
+      ///
       if(FwBoxCore::ValType[vni] == VALUE_TYPE_OUT_SWITCH ) {
-        Component = "switch";
-        DBGMSGLN("accept switch");
+        component = "switch";
       }
-      //homeassistant/cdee/name/set
+      else if(FwBoxCore::ValType[vni] == VALUE_TYPE_OUT_Brightness ) {
+        component = "light";
+      }
+      
       //
       // Only subscribe input values.
       //
-      // String str_topic = "fw_box/" + simple_chip_id + "/" + FwBoxCore::ValName[vni] + "/set";
-      DBGMSGLN("accept switch");
-      String str_topic = "homeassistant/" + Component + "/" + simple_chip_id + "/" + FwBoxCore::ValName[vni] + "/set";
+      String str_topic = "homeassistant/" + component + "/" + simple_chip_id + "/" + FwBoxCore::ValName[vni] + "/set";
 
       FwBoxCore::MqttClient->subscribe(str_topic.c_str());
       DBGMSGLN(str_topic);
-      DBGMSGLN("12312312");
     } // END OF "for (int vni = 0; vni < FwBoxCore::ValCount; vni++)"
   }
   else if(FwBoxCore::SysCfg.MqttTopicType == MQTT_TOPIC_TYPE_CUSTOM) {
@@ -1109,17 +1170,21 @@ void FwBoxCore::mqttPublish(uint8_t valIndex, const char* payload)
     // Produce the topic string
     //
     
-    String Component = "";
+    String component = ""; ///Home assistant component
     
+    ///
+    /// get what component it is  
+    ///
     for (int vi = 0; vi < FwBoxCore::ValCount; vi++) {
       if(FwBoxCore::ValType[vi] == VALUE_TYPE_OUT_SWITCH ) {
-        Component = "switch";
+        component = "switch";
+      }
+      else if(FwBoxCore::ValType[vi] == VALUE_TYPE_OUT_Brightness ) {
+        component = "light";
       }
     }
 
-    //"homeassistant/switch/cdee/state",
-    //String str_topic = "fw_box/" + simple_chip_id + "/" + FwBoxCore::ValName[valIndex];
-    String str_topic = "homeassistant/" + Component + "/" + simple_chip_id + "/" + FwBoxCore::ValName[valIndex] + "/state";
+    String str_topic = "homeassistant/" + component + "/" + simple_chip_id + "/" + FwBoxCore::ValName[valIndex] + "/state";
     //
     // Publish it
     //
@@ -1181,13 +1246,13 @@ void FwBoxCore::setValUnit(int valIndex, const char* unit)
   if((valIndex >= 0) && (valIndex < FwBoxCore::ValCount))
     FwBoxCore::ValUnit[valIndex] = unit;
 }
-
+///////////////////////////////
 void FwBoxCore::setValUnit(int valIndex,String unit)
 {
   if((valIndex >= 0) && (valIndex < FwBoxCore::ValCount))
     FwBoxCore::ValUnit[valIndex] = unit;
 }
-
+//////////////////////////////////////
 String FwBoxCore::getValDesc(int index)
 {
     if((index >= 0) && (index < FwBoxCore::ValCount))
@@ -1268,4 +1333,3 @@ signed char FwBoxCore::getServerStatus()
 {
   return FwBoxCore::ServerStatus;
 }
-
