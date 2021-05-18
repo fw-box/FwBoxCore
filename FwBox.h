@@ -38,16 +38,9 @@ void setRcvValueCallback(ReceiveValueCallback rcvValueCallback)
 void mqttSubCallback(char* topic, byte* payload, unsigned int length) {
   payload[length] = '\0';
   String str_callback_topic = String((char*)topic);
-  String Component;
-  //uint8_t val_out_in = FwBoxIns.getValOutIn();
-  //String str_topic_head = "fw_box/" + FwBoxIns.getSimpleChipId();
+  String component;///Home assistant component
 
-  //homeassistant/cdee/name/set
-
- //String str_topic_head = "homeassisatant/" + FwBoxIns.getSimpleChipId()
- // str_topic_head += "/";
   String str_topic_head = "homeassistant/";
-  DBGMSGLN(str_callback_topic);
 
   for(int vi = 0; vi < FwBoxIns.getValCount(); vi++) {
     //
@@ -58,19 +51,15 @@ void mqttSubCallback(char* topic, byte* payload, unsigned int length) {
     }
   
     if(FwBoxIns.getValType(vi) == VALUE_TYPE_OUT_SWITCH ) {
-        Component = "switch";
-        DBGMSGLN("accept switch");
+        component = "switch";
+    }
+    else if(FwBoxIns.getValType(vi) == VALUE_TYPE_OUT_Brightness ) {
+        component = "light";
     }
     //
     // Consist the topic string.
     //
-    DBGMSGLN("?????");
-    DBGMSGLN(Component);
-    DBGMSGLN(FwBoxIns.getValType(vi));
-    DBGMSGLN("?????");
-    //String str_topic = str_topic_head + FwBoxIns.getValName(vi) + "/set";
-    String str_topic = str_topic_head + Component + "/" + FwBoxIns.getSimpleChipId() + "/" + FwBoxIns.getValName(vi) + "/set";
-    DBGMSGLN("accept switch@22222");
+    String str_topic = str_topic_head + component + "/" + FwBoxIns.getSimpleChipId() + "/" + FwBoxIns.getValName(vi) + "/set";
     DBGMSGLN( str_topic);
     //
     // MQTT server send a topic to modify GPIO value.
@@ -78,8 +67,6 @@ void mqttSubCallback(char* topic, byte* payload, unsigned int length) {
     if(str_callback_topic.equals(str_topic) == true)
     {
       String str_payload = String((char*)payload);
-      //str_payload.toUpperCase();
-         DBGMSGLN("5151515151");
       if(RcvValueCallback != 0)
         RcvValueCallback(vi, &str_payload);
     }
@@ -140,7 +127,7 @@ void fbBegin(int devType, const char* fwVersion)
   // If 'fbEarlyBegin' didn't run yet, run it.
   //
   if (FlagFbEarlyBegin == false) {
-  	fbEarlyBegin(devType, fwVersion);
+    fbEarlyBegin(devType, fwVersion);
   }
 
 #if ENABLE_MQTT == 1
@@ -155,6 +142,10 @@ void fbBegin(int devType, const char* fwVersion)
   //
   FwBoxIns.begin(devType, fwVersion);
 
+
+  DBGMSGF2("WiFi SSID, psk = %s, %s\n", WiFi.SSID().c_str(), WiFi.psk().c_str());
+  
+  
   //
   // If the SSID is not set yet, open a web server for setting.
   //
