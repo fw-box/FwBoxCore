@@ -58,9 +58,8 @@
 #define VALUE_TYPE_OUT_SENSOR 0x005
 #define VALUE_TYPE_OUT_BUTTON 0x006
 #define VALUE_TYPE_OUT_STRING 0x007
-
 #define VALUE_TYPE_OUT_SWITCH 0x106
-
+#define VALUE_TYPE_OUT_Brightness 0x105
 namespace FwBox {
   
   struct DeviceConfig {
@@ -221,4 +220,3 @@ namespace FwBox {
 using namespace FwBox;
 
 #endif // __FWBOXCORE__
-
