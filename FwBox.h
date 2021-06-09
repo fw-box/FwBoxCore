@@ -53,7 +53,7 @@ void mqttSubCallback(char* topic, byte* payload, unsigned int length) {
     if(FwBoxIns.getValType(vi) == VALUE_TYPE_OUT_SWITCH ) {
         component = "switch";
     }
-    else if(FwBoxIns.getValType(vi) == VALUE_TYPE_OUT_Brightness ) {
+    else if(FwBoxIns.getValType(vi) == VALUE_TYPE_OUT_BRIGHTNESS ) {
         component = "light";
     }
     //

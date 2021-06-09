@@ -905,7 +905,7 @@ void FwBoxCore::mqttPublish()
         else if(FwBoxCore::ValType[vi] == VALUE_TYPE_OUT_STRING ) {
           component = "string";
         }
-        else if(FwBoxCore::ValType[vi] == VALUE_TYPE_OUT_Brightness ) {
+        else if(FwBoxCore::ValType[vi] == VALUE_TYPE_OUT_BRIGHTNESS ) {
           component = "light";
         }
         else if(FwBoxCore::ValType[vi] == VALUE_TYPE_OUT_SWITCH ) {
@@ -928,14 +928,14 @@ void FwBoxCore::mqttPublish()
         ///
         /// Home assistant payload of input
         ///
-        else if((FwBoxCore::ValType[vi] == VALUE_TYPE_OUT_SWITCH) || (FwBoxCore::ValType[vi] == VALUE_TYPE_OUT_Brightness)){
+        else if((FwBoxCore::ValType[vi] == VALUE_TYPE_OUT_SWITCH) || (FwBoxCore::ValType[vi] == VALUE_TYPE_OUT_BRIGHTNESS)){
           str_payload +=  ",\n \"state_topic\" : \"homeassistant/" + component + "/" + simple_chip_id + "/" + FwBoxCore::ValName[vi] + "/state\"";
           str_payload +=  ",\n \"command_topic\" : \"homeassistant/" + component + "/" + simple_chip_id + "/" + FwBoxCore::ValName[vi] +"/set\"";
           
           ///
           /// Home assistant light 
           ///
-          if((FwBoxCore::ValType[vi] == VALUE_TYPE_OUT_Brightness)){
+          if((FwBoxCore::ValType[vi] == VALUE_TYPE_OUT_BRIGHTNESS)){
             str_payload +=  ",\n \"schema\" :  \"json\"";
             str_payload +=  ",\n \"brightness\" :  true";
           }
@@ -1120,7 +1120,7 @@ void FwBoxCore::mqttSubscribe()
       if(FwBoxCore::ValType[vni] == VALUE_TYPE_OUT_SWITCH ) {
         component = "switch";
       }
-      else if(FwBoxCore::ValType[vni] == VALUE_TYPE_OUT_Brightness ) {
+      else if(FwBoxCore::ValType[vni] == VALUE_TYPE_OUT_BRIGHTNESS ) {
         component = "light";
       }
       
@@ -1179,7 +1179,7 @@ void FwBoxCore::mqttPublish(uint8_t valIndex, const char* payload)
       if(FwBoxCore::ValType[vi] == VALUE_TYPE_OUT_SWITCH ) {
         component = "switch";
       }
-      else if(FwBoxCore::ValType[vi] == VALUE_TYPE_OUT_Brightness ) {
+      else if(FwBoxCore::ValType[vi] == VALUE_TYPE_OUT_BRIGHTNESS ) {
         component = "light";
       }
     }

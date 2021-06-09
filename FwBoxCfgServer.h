@@ -18,13 +18,16 @@
 #if defined(ESP8266)
   #include <ESP8266WebServer.h>
   ESP8266WebServer CfgServer(80);
-#else
+#elif defined(ESP32)
   //
   // ESP32
   //
   //#include <Preferences.h>
   #include <WebServer.h>
   WebServer CfgServer(80);
+#elif defined(CONFIG_PLATFORM_8195A)
+  #include <WiFi.h>
+  WiFiServer CfgServer(80);
 #endif
 
 

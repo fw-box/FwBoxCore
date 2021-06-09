@@ -24,11 +24,15 @@
   #include <ESP8266WiFi.h>
   #include <ESP8266HTTPClient.h>
   #include <ESP8266httpUpdate.h>
-#else
+#elif defined(ESP32)
   #include <WiFi.h>
   #include <HTTPClient.h>
   #include <WiFiClientSecure.h>
   #include <HTTPUpdate.h>
+#elif defined(CONFIG_PLATFORM_8195A)
+  #include <HttpClient.h>
+  #include <WiFi.h>
+  //#include <WiFiClient.h>
 #endif
 
 #include <PubSubClient.h>
